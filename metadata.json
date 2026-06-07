@@ -1,0 +1,6 @@
+{
+  "name": "Jewel 揪我",
+  "description": "大學校園互助與社交配對平台 - campus mutual aid, friendship matching, and collaborative task platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
