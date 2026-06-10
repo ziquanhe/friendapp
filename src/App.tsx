@@ -56,25 +56,48 @@ export default function App() {
   const [currentScreen, setScreen] = useState<string>('splash');
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
-  // Helper when user swipes to Match with CoolGuy
-  const handleTriggerMatch = () => {
-    // Increment notifications or make thread visible if matched
+  // Helper when user swipes to Match with anyone dynamically
+  const handleTriggerMatch = (profile: UserProfile) => {
+    const threadId = `thread-${profile.id}`;
+    
+    // Add new thread dynamically representing this matched user
     setThreads(prev => {
-      const exists = prev.some(t => t.id === 'thread-coolguy');
+      const exists = prev.some(t => t.id === threadId);
       if (exists) return prev;
       
-      const newCoolGuyThread: ChatThread = {
-        id: 'thread-coolguy',
-        title: 'CoolGuy',
+      const newThread: ChatThread = {
+        id: threadId,
+        title: profile.name,
         type: 'personal',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBav6p8BHFMfUs9lBDDZjf6pQov4xm6UiBuMNArHBGttHEmrmf3Z7Xu4ICx4qp-R1TCwAZAm0x6VgxViS8EXF7nYcv6LPu5Ipl2hTg3Jb8sU0nifVl4F8SwB-j58-ku-BVc7qqfYgSL_0hn184wAAOIi4rpocdww6H39R0mO_UnkWvq4DOYsTUxMAMpmlHlfThy5YTY5kX-8UGBkLH2lZwBVFrSVi0j8_ynlYnVuNgdza-EdOF1hcIXBkALGsGh69-Z4ltefz2UbakM',
-        statusLabel: 'Active 2m ago',
-        categoryTag: '單車夜騎',
-        lastMessageContent: 'CoolGuy：嗨！我們昨晚在老地方集合！',
-        lastMessageTime: '12:34',
+        avatar: profile.avatar,
+        statusLabel: 'Active just now',
+        categoryTag: profile.mbti,
+        lastMessageContent: `${profile.name}：嗨！我們配對成功了！很高興認識你！`,
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         unreadCount: 1
       };
-      return [newCoolGuyThread, ...prev];
+      return [newThread, ...prev];
+    });
+
+    // Initialize messages record for this thread
+    setMessages(prev => {
+      if (prev[threadId]) return prev;
+      
+      const initialMsg: ChatMessage = {
+        id: `msg-match-${Date.now()}`,
+        threadId: threadId,
+        senderName: profile.name,
+        senderAvatar: profile.avatar,
+        senderIsMe: false,
+        content: `嗨 Peter！我們配對成功囉！我很喜歡你的自我介紹，我也相當喜歡 ${profile.interests.join('、')}。有空可以在校園裡一起吃個飯或協作任務喔！✨`,
+        timestampLabel: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'text'
+      };
+      
+      return {
+        ...prev,
+        [threadId]: [initialMsg]
+      };
     });
   };
 
@@ -99,6 +122,7 @@ export default function App() {
         return <LoginScreen setScreen={setScreen} />;
       
       case 'register':
+      case 'edit-profile':
         return (
           <RegisterScreen 
             currentUser={currentUser} 
@@ -127,6 +151,10 @@ export default function App() {
             setTasks={setTasks}
             setScreen={setScreen}
             setThreadOnJoin={setThreadOnJoin}
+            threads={threads}
+            setThreads={setThreads}
+            messages={messages}
+            setMessages={setMessages}
           />
         );
       
@@ -149,6 +177,7 @@ export default function App() {
             setPotentialSwipes={setPotentialSwipes}
             setScreen={setScreen}
             onTriggerMatch={handleTriggerMatch}
+            setSelectedThreadId={setSelectedThreadId}
           />
         );
       

@@ -17,17 +17,42 @@ interface SocialMatchProps {
   potentialSwipes: UserProfile[];
   setPotentialSwipes: React.Dispatch<React.SetStateAction<UserProfile[]>>;
   setScreen: (screen: string) => void;
-  // Trigger matching coolguy thread
-  onTriggerMatch: () => void;
+  // Trigger matching dynamic thread
+  onTriggerMatch: (profile: UserProfile) => void;
+  setSelectedThreadId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export const TinderSwipe: React.FC<SocialMatchProps> = ({
-  potentialSwipes, setPotentialSwipes, setScreen, onTriggerMatch
+  potentialSwipes, setPotentialSwipes, setScreen, onTriggerMatch, setSelectedThreadId
 }) => {
   const [deck, setDeck] = useState<UserProfile[]>(potentialSwipes);
   const [currentIndex, setCurrentXIndex] = useState(0);
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<UserProfile | null>(null);
+  const [detailProfile, setDetailProfile] = useState<UserProfile | null>(null);
+
+  // States for "Who Liked Me" features
+  const [likesReceived, setLikesReceived] = useState<UserProfile[]>(() => {
+    return potentialSwipes.filter(p => ['swipe-sarah', 'swipe-sunny', 'swipe-bebe'].includes(p.id));
+  });
+  const [likesPanelOpen, setLikesPanelOpen] = useState(false);
+
+  const handleAcceptLike = (profile: UserProfile) => {
+    // 1. Remove from likesReceived list
+    setLikesReceived(prev => prev.filter(p => p.id !== profile.id));
+    // 2. Set matchedProfile to show the Success celebration dialog
+    setMatchedProfile(profile);
+    setMatchModalOpen(true);
+    // 3. Trigger dynamic chat thread in App
+    onTriggerMatch(profile);
+    // 4. Close notifications modal so they see the Match Celebration view
+    setLikesPanelOpen(false);
+  };
+
+  const handleDeclineLike = (profile: UserProfile) => {
+    // Remove from list
+    setLikesReceived(prev => prev.filter(p => p.id !== profile.id));
+  };
 
   const activeProfile = currentIndex < deck.length ? deck[currentIndex] : null;
 
@@ -39,11 +64,11 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
   };
 
   const handleSwipeRight = () => {
-    // Liked! Trigger match for Lucas or Sarah
+    // Liked! Trigger match for any candidate profile
     if (activeProfile) {
       setMatchedProfile(activeProfile);
       setMatchModalOpen(true);
-      onTriggerMatch(); // Enable simulated CoolGuy discussion in database
+      onTriggerMatch(activeProfile); // Enable dynamic personal chat thread
     }
   };
 
@@ -57,9 +82,6 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
       {/* Top Header */}
       <header className="flex justify-between items-center px-5 h-16 w-full fixed top-0 z-50 bg-white shadow-sm left-0 right-0 max-w-2xl mx-auto">
         <div className="flex items-center gap-3">
-          <button className="p-1.5 hover:bg-slate-100 rounded-full active:scale-95 duration-100">
-            <span className="material-symbols-outlined text-primary font-bold">menu</span>
-          </button>
           <img 
             alt="Jewel Logo" 
             className="h-8 w-auto object-contain flex-shrink-0" 
@@ -67,8 +89,16 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
           />
           <h1 className="font-display text-md md:text-lg font-bold text-primary tracking-tight">Jewel Match</h1>
         </div>
-        <button className="p-1.5 hover:bg-slate-100 rounded-full active:scale-95 duration-100 text-primary">
+        <button 
+          className="p-1.5 hover:bg-slate-100 rounded-full active:scale-95 duration-100 text-primary relative cursor-pointer"
+          onClick={() => setLikesPanelOpen(true)}
+        >
           <span className="material-symbols-outlined">notifications</span>
+          {likesReceived.length > 0 && (
+            <span className="absolute top-1 right-1 bg-secondary text-white rounded-full w-4.5 h-4.5 flex items-center justify-center text-[9px] font-bold font-sans shadow-sm ring-2 ring-white">
+              {likesReceived.length}
+            </span>
+          )}
         </button>
       </header>
 
@@ -82,7 +112,11 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
         {/* Card Content Display */}
         <div className="my-6 relative flex items-center justify-center min-h-[350px]">
           {activeProfile ? (
-            <div className="w-full bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-100 flex flex-col justify-between aspect-[3/4] relative animate-in fade-in zoom-in-95 duration-200">
+            <div 
+              onDoubleClick={() => setDetailProfile(activeProfile)}
+              className="w-full bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-100 flex flex-col justify-between aspect-[3/4] relative animate-in fade-in zoom-in-95 duration-200 cursor-pointer select-none transition-all duration-300 hover:shadow-2xl"
+              title="雙擊卡片查看完整自介！"
+            >
               
               {/* Top Cover Portrait */}
               <div className="relative h-2/3">
@@ -91,6 +125,12 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
                   className="w-full h-full object-cover" 
                   src={activeProfile.avatar}
                 />
+                {/* Double click tutorial helper badge */}
+                <div className="absolute top-4 left-4 bg-black/45 backdrop-blur-md text-white/95 text-[10px] font-bold px-3 py-1 rounded-full pointer-events-none flex items-center gap-1.5 font-sans shadow-sm z-10">
+                  <span className="material-symbols-outlined !text-[12px] animate-pulse">gesture</span>
+                  <span>雙擊查看完整自介</span>
+                </div>
+
                 {/* Bottom name overlays */}
                 <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between">
                   <div className="space-y-1">
@@ -210,6 +250,7 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
                 className="w-full bg-primary hover:bg-primary-container text-white py-3.5 rounded-xl font-semibold transition-colors active:scale-95 duration-100 text-sm flex items-center justify-center gap-1.5"
                 onClick={() => {
                   setMatchModalOpen(false);
+                  setSelectedThreadId(`thread-${matchedProfile.id}`);
                   setScreen('chat');
                 }}
               >
@@ -222,6 +263,243 @@ export const TinderSwipe: React.FC<SocialMatchProps> = ({
               >
                 稍後再說，繼續探索
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WHO LIKED ME PANEL */}
+      {likesPanelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-[420px] rounded-3xl p-6 flex flex-col gap-4 shadow-2xl animate-in zoom-in-95 duration-200 relative max-h-[80vh] overflow-hidden border border-slate-100">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary font-bold">notifications_active</span>
+                <h3 className="font-sans font-bold text-md text-on-surface">誰按了我的喜歡？</h3>
+              </div>
+              <button 
+                className="p-1.5 hover:bg-slate-100 rounded-full active:scale-95 duration-100 cursor-pointer text-slate-500"
+                onClick={() => setLikesPanelOpen(false)}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-on-surface-variant font-sans -mt-1 leading-relaxed text-left">
+              在校園裡對你感興趣的人！只要你按下「接受配對」，就能立刻和他們開啟聊天、協作任務或共享午後時光！
+            </p>
+
+            {/* Content List */}
+            <div className="flex-grow overflow-y-auto space-y-4 py-2 pr-1 scrollbar-thin text-left">
+              {likesReceived.length > 0 ? (
+                <div className="mb-2 text-[10px] text-on-surface-variant bg-amber-50 border border-amber-100 text-amber-800 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                  <span className="material-symbols-outlined !text-[13px] animate-pulse">gesture</span>
+                  <span>💡 雙擊列表中的對象可查看完整自介！</span>
+                </div>
+              ) : null}
+              {likesReceived.length > 0 ? (
+                likesReceived.map(profile => (
+                  <div 
+                    key={profile.id} 
+                    onDoubleClick={() => setDetailProfile(profile)}
+                    title="雙擊查看完整自介！"
+                    className="p-3.5 bg-slate-50 hover:bg-slate-100/70 rounded-2xl border border-slate-100 flex flex-col gap-3 transition-all duration-150 shadow-sm cursor-pointer select-none hover:border-secondary/30"
+                  >
+                    <div className="flex gap-3">
+                      <img 
+                        alt={profile.name} 
+                        src={profile.avatar} 
+                        className="w-12 h-12 rounded-full object-cover border border-slate-200 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-sans font-extrabold text-sm text-on-surface">{profile.name}</span>
+                          <span className="text-xs text-on-surface-variant">({profile.age} 歲)</span>
+                          <span className="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">
+                            {profile.mbti}
+                          </span>
+                        </div>
+                        <p className="text-xs text-on-surface-variant line-clamp-2 mt-1 leading-relaxed font-sans">
+                          {profile.bio}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    {profile.interests && profile.interests.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {profile.interests.slice(0, 3).map(interest => (
+                          <span 
+                            key={interest} 
+                            className="bg-white text-secondary text-[10px] px-2 py-0.5 rounded-full border border-secondary/15 font-sans"
+                          >
+                            #{interest}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 border-t border-slate-200/50 pt-2.5">
+                      <button 
+                        className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-200/80 text-on-surface-variant text-xs font-bold rounded-xl active:scale-95 duration-100 transition-all cursor-pointer"
+                        onClick={() => handleDeclineLike(profile)}
+                      >
+                        婉拒
+                      </button>
+                      <button 
+                        className="px-4 py-1.5 bg-secondary hover:bg-secondary/90 text-white text-xs font-bold rounded-xl active:scale-95 duration-100 transition-all flex items-center gap-1 cursor-pointer shadow-sm shadow-secondary/10"
+                        onClick={() => handleAcceptLike(profile)}
+                      >
+                        <Heart className="w-3.5 h-3.5 text-white fill-current" />
+                        <span>接受配對</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 px-4">
+                  <span className="material-symbols-outlined text-slate-300 text-4xl mb-2">favorite_border</span>
+                  <p className="text-sm font-bold text-on-surface-variant font-sans">目前沒有收到新的喜歡囉</p>
+                  <p className="text-xs text-outline mt-1 leading-relaxed max-w-[280px] mx-auto font-sans">
+                    多去「探索」頁面參與或發布各種校園任務活動，填寫更豐富的 MBTI 及自我介紹，就能吸引更多人喔！
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* USER DETAIL MODAL ON DOUBLE-CLICK */}
+      {detailProfile && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/70 backdrop-blur-md transition-all animate-in fade-in duration-200"
+          onClick={() => setDetailProfile(null)}
+        >
+          <div 
+            className="bg-white w-full max-w-[420px] rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 relative border border-slate-100/85 flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header/Close button overlay */}
+            <div className="absolute top-4 right-4 z-10">
+              <button 
+                onClick={() => setDetailProfile(null)}
+                className="w-9 h-9 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-sm active:scale-95 duration-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Profile Avatar Top Segment */}
+            <div className="relative h-64 w-full flex-shrink-0">
+              <img 
+                alt={detailProfile.name} 
+                src={detailProfile.avatar} 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-end justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-sans text-xl font-bold text-white">{detailProfile.name}, {detailProfile.age || 20} 歲</h3>
+                    <span className="bg-secondary text-white px-2.5 py-0.5 rounded-full text-xs font-mono font-bold shadow-sm">
+                      {detailProfile.mbti || 'ENFJ'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/80 font-sans mt-1 flex items-center gap-1">
+                    <span className="material-symbols-outlined !text-[14px]">school</span>
+                    <span>校園協作夥伴</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Detail Content (Scrollable Container) */}
+            <div className="p-6 flex-1 overflow-y-auto space-y-5 text-left scrollbar-thin">
+              {/* Detailed Bio Segment */}
+              <div className="space-y-1.5">
+                <h4 className="text-[10px] tracking-widest uppercase font-mono font-bold text-outline">完整自我介紹</h4>
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  <p className="text-sm text-on-surface leading-relaxed text-slate-700 whitespace-pre-wrap font-sans">
+                    {detailProfile.bio || '這個人很懶，還沒有填寫自我介紹。'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Interests specifications */}
+              <div className="space-y-1.5">
+                <h4 className="text-[10px] tracking-widest uppercase font-mono font-bold text-outline">興趣愛好</h4>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {detailProfile.interests && detailProfile.interests.length > 0 ? (
+                    detailProfile.interests.map(it => (
+                      <span 
+                        key={it} 
+                        className="bg-primary/5 text-primary text-xs font-semibold px-3 py-1.5 rounded-full font-serif border border-primary/10"
+                      >
+                        {it}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 font-sans">目前無填寫興趣愛好</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Helper Star Metrics and Stats Segment */}
+              <div className="bg-gradient-to-br from-slate-50 via-white to-slate-50/50 rounded-2xl p-4 border border-slate-100 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500 font-sans">校園信用認證評估</span>
+                  <span className="bg-[#006b5c]/10 text-[#006b5c] text-[10px] font-bold font-sans px-2.5 py-0.5 rounded-full border border-[#006b5c]/10 flex items-center gap-0.5">
+                    <ShieldCheck className="w-3.5 h-3.5" /> 實名信用安全
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center pt-2 divide-x divide-slate-100">
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-sans">好評度</p>
+                    <p className="text-sm font-extrabold text-slate-800 mt-1 flex items-center justify-center gap-0.5">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>{detailProfile.ratings || 4.9}</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-sans">互助次數</p>
+                    <p className="text-sm font-extrabold text-slate-800 mt-1 flex items-center justify-center gap-0.5">
+                      <Trophy className="w-3.5 h-3.5 text-secondary" />
+                      <span>{detailProfile.helpCount || 30} 次</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-sans">準時率</p>
+                    <p className="text-sm font-extrabold text-slate-800 mt-1 flex items-center justify-center gap-0.5">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      <span>{detailProfile.punctuality || 98}%</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions inside detailed modal */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+              <button 
+                onClick={() => setDetailProfile(null)}
+                className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs active:scale-95 duration-100 cursor-pointer text-center"
+              >
+                返回
+              </button>
+              {currentIndex < deck.length && deck[currentIndex].id === detailProfile.id && (
+                <button 
+                  onClick={() => {
+                    setDetailProfile(null);
+                    handleSwipeRight();
+                  }}
+                  className="flex-grow-[1.5] py-3 bg-secondary hover:bg-secondary/90 text-white rounded-xl font-bold text-xs active:scale-95 duration-100 flex items-center justify-center gap-1 cursor-pointer shadow-sm shadow-secondary/15"
+                >
+                  <Heart className="w-4 h-4 fill-current text-white" />
+                  <span>立刻配對 (送出喜歡)</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -252,23 +530,12 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md flex flex-col pb-24">
       {/* Top Banner Navigation */}
-      <header className="bg-surface shadow-[0_4px_20px_rgba(0,91,191,0.04)] fixed top-0 w-full z-50 h-16 flex justify-between items-center px-5 max-w-2xl mx-auto left-0 right-0">
-        <div className="flex items-center gap-3">
-          <button 
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors active:scale-95 duration-100"
-            onClick={() => setScreen('dashboard')}
-          >
-            <ArrowLeft className="w-5 h-5 text-primary" />
-          </button>
-          <img 
-            alt="Jewel Logo" 
-            className="h-10 w-auto object-contain" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt1JKtEXwLdtrhfFRGxkvhnDPM9O3-nz6npiZc-PbE0VWN2z1Qe9YJn9UbZPHAlvzE1WaLOC9DZ9Eeuu6w8lZfFl4SvuxtIm_2YiMf_L6a165ys8twOBG7_CePBsJktG_o-zUtyfowRe1C13XzNDW4XoUxZQN8tFR6Dcgxije3k2_Bt1cOyXV5ITzTLMnslIrFtVcsjJ7E8qpj3O-qQgCHQpAdaJTYgaWmWkyjqkkSoyS1H3SGryz1iLTQQxP0iUjPuOxFenjpxZ6r"
-          />
-        </div>
-        <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors active:scale-95">
-          <span className="material-symbols-outlined text-primary font-bold">search</span>
-        </button>
+      <header className="bg-surface shadow-[0_4px_20px_rgba(0,91,191,0.04)] fixed top-0 w-full z-50 h-16 flex justify-center items-center px-5 max-w-2xl mx-auto left-0 right-0">
+        <img 
+          alt="Jewel Logo" 
+          className="h-10 w-auto object-contain" 
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt1JKtEXwLdtrhfFRGxkvhnDPM9O3-nz6npiZc-PbE0VWN2z1Qe9YJn9UbZPHAlvzE1WaLOC9DZ9Eeuu6w8lZfFl4SvuxtIm_2YiMf_L6a165ys8twOBG7_CePBsJktG_o-zUtyfowRe1C13XzNDW4XoUxZQN8tFR6Dcgxije3k2_Bt1cOyXV5ITzTLMnslIrFtVcsjJ7E8qpj3O-qQgCHQpAdaJTYgaWmWkyjqkkSoyS1H3SGryz1iLTQQxP0iUjPuOxFenjpxZ6r"
+        />
       </header>
 
       {/* Main Container */}
@@ -305,6 +572,26 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
           </div>
         </section>
 
+        {/* User Coins Balances */}
+        <section className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[16px] p-5 shadow-sm border border-amber-200/50 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-inner">
+              <Sparkles className="w-6 h-6 text-amber-500 animate-pulse" />
+            </div>
+            <div className="text-left">
+              <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-amber-700 block">ACCOUNT BALANCE</span>
+              <h3 className="font-sans font-extrabold text-slate-800 text-md mt-0.5">我的揪幣</h3>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="flex items-baseline gap-1 justify-end">
+              <span className="font-sans font-black text-3xl text-amber-600">{currentUser.coins !== undefined ? currentUser.coins : 1250}</span>
+              <span className="text-xs font-bold text-amber-700 font-sans">揪幣</span>
+            </div>
+            <span className="text-[10px] text-amber-600/80 font-sans block mt-0.5">可用於發布任務與打賞</span>
+          </div>
+        </section>
+
         {/* Action Toggle relationship button exact layout */}
         <button 
           className={`w-full py-4 px-6 rounded-[16px] flex items-center justify-between group active:scale-[0.98] transition-all cursor-pointer ${activeLongRelationship ? 'bg-secondary text-white shadow-xl shadow-secondary/15' : 'bg-primary text-on-primary shadow-xl shadow-primary/15'}`}
@@ -325,7 +612,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
         {/* Quick Edit CTA */}
         <button 
           className="w-full bg-white text-on-surface py-3 px-6 rounded-[16px] border border-outline-variant/40 flex items-center justify-between group active:scale-[0.98] hover:bg-slate-50 transition-all font-sans cursor-pointer h-14"
-          onClick={() => setScreen('register')} // allows reediting profile setup
+          onClick={() => setScreen('edit-profile')} // allows reediting profile setup
         >
           <div className="flex items-center gap-3">
             <Edit className="w-5 h-5 text-outline" />

@@ -10,7 +10,7 @@ import {
   MapPin, Map, Layers, ChevronRight, CheckSquare, PlusCircle, AlertTriangle, 
   SlidersHorizontal, Sparkles, Navigation, Info, Group, Check
 } from 'lucide-react';
-import { CollaborativeTask, TaskCategory } from '../types';
+import { CollaborativeTask, TaskCategory, ChatThread, ChatMessage } from '../types';
 
 interface TaskViewsProps {
   currentUser: { id: string; name: string; avatar: string; points: number };
@@ -19,10 +19,15 @@ interface TaskViewsProps {
   setTasks: React.Dispatch<React.SetStateAction<CollaborativeTask[]>>;
   setScreen: (screen: string) => void;
   setThreadOnJoin: (threadId: string) => void;
+  threads: ChatThread[];
+  setThreads: React.Dispatch<React.SetStateAction<ChatThread[]>>;
+  messages: Record<string, ChatMessage[]>;
+  setMessages: React.Dispatch<React.SetStateAction<Record<string, ChatMessage[]>>>;
 }
 
 export const TaskMapAndList: React.FC<TaskViewsProps> = ({ 
-  currentUser, setCurrentUser, tasks, setTasks, setScreen, setThreadOnJoin 
+  currentUser, setCurrentUser, tasks, setTasks, setScreen, setThreadOnJoin,
+  threads, setThreads, messages, setMessages
 }) => {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map'); // 'map' is default following screen 11 (Map Canvas background)
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -51,7 +56,48 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
           points: prev.points + 10 // +10 points as show in PeterLin badge screen
         }));
 
-        alert(`恭喜加入「${t.title}」！已為您增加 10 點社群使用積分。`);
+        alert(`恭喜加入「${t.title}」！已為您增加 10 點社群使用積分，並已自動在訊息頁面為您開啟「${t.title}」的活動專屬聊天室！`);
+
+        const threadId = t.createdByUserId === 'coolguy' ? 'thread-coolguy' : `thread-${t.id}`;
+        
+        // Add new thread dynamically representing this activity
+        setThreads(prev => {
+          const exists = prev.some(thread => thread.id === threadId);
+          if (exists) return prev;
+
+          const newThread: ChatThread = {
+            id: threadId,
+            title: t.title, // Title of the joined activity
+            type: 'group',
+            avatar: t.createdByAvatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvhDyXNPCRFFa_yFGYfDZzb6I9G3l73qki80CckRcvPn1IAhxdMQJhqhY_Wl64rStb3b94YD--UgLA37HbfEYDELexi2JqEyPw-Q2w28xe5htKkgsdjlhAwUxjzaTCBddWBpQsuHs8Sad57jDe5ncnCd4xMEkB7FgXWFTS_-mE1Zj42hrEl4_j0OsIabIDni84HtZkj_LuR8xQcmo-7j901QXRhYuZUOq8MwjhauyM99rK6XDTNPQ7v2vjnIH_bq6Z_ubk8QDcRjoN',
+            statusLabel: `${newHelpersCount + 1} 位成員`,
+            categoryTag: t.category === 'dining' ? '美食' : t.category === 'sports' ? '運動' : t.category === 'arts' ? '藝文' : '協助',
+            lastMessageContent: '系統訊息：您已成功加入本活動，並與其他成員連線！🎉',
+            lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: 1
+          };
+          return [newThread, ...prev];
+        });
+
+        // Initialize messages record for this thread
+        setMessages(prev => {
+          if (prev[threadId]) return prev;
+          
+          const systemMsg: ChatMessage = {
+            id: `msg-sys-${Date.now()}`,
+            threadId: threadId,
+            senderName: '系統管理員',
+            senderAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAt1JKtEXwLdtrhfFRGxkvhnDPM9O3-nz6npiZc-PbE0VWN2z1Qe9YJn9UbZPHAlvzE1WaLOC9DZ9Eeuu6w8lZfFl4SvuxtIm_2YiMf_L6a165ys8twOBG7_CePBsJktG_o-zUtyfowRe1C13XzNDW4XoUxZQN8tFR6Dcgxije3k2_Bt1cOyXV5ITzTLMnslIrFtVcsjJ7E8qpj3O-qQgCHQpAdaJTYgaWmWkyjqkkSoyS1H3SGryz1iLTQQxP0iUjPuOxFenjpxZ6r',
+            senderIsMe: false,
+            content: `歡迎加入「${t.title}」！大家可以在這裡討論活動細節、時間與地點。`,
+            timestampLabel: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text'
+          };
+          return {
+            ...prev,
+            [threadId]: [systemMsg]
+          };
+        });
 
         return {
           ...t,
@@ -64,14 +110,27 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
     }));
   };
 
-  // Categories mapping to custom icons & tags
-  const categoriesList = [
+  // Categories mapping to custom icons & tags with dynamic fallback
+  const baseCategories = [
     { key: 'all', label: '全部活動' },
     { key: 'dining', label: '美食聚餐' },
     { key: 'sports', label: '運動健身' },
     { key: 'arts', label: '藝文展覽' },
     { key: 'support', label: '技術支援/學業協助' }
   ];
+
+  const categoriesList = [...baseCategories];
+  tasks.forEach(t => {
+    const knownKeys = ['all', 'dining', 'sports', 'arts', 'support'];
+    if (!knownKeys.includes(t.category)) {
+      if (!categoriesList.some(c => c.key === t.category)) {
+        categoriesList.push({
+          key: t.category,
+          label: t.customStatusLabel || t.category
+        });
+      }
+    }
+  });
 
   // Filtering tasks
   const filteredTasks = tasks.filter(task => {
@@ -87,7 +146,7 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
       case 'dining': return <Utensils className="w-5 h-5 text-primary" />;
       case 'sports': return <Bike className="w-5 h-5 text-secondary" />;
       case 'arts': return <Music className="w-5 h-5 text-tertiary" />;
-      default: return <GraduationCap className="w-5 h-5 text-primary" />;
+      default: return <Sparkles className="w-5 h-5 text-amber-500" />;
     }
   };
 
@@ -96,7 +155,7 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
       case 'dining': return { bg: 'bg-primary/10', text: 'text-primary', labelBg: 'bg-primary/10 text-primary' };
       case 'sports': return { bg: 'bg-secondary/15', text: 'text-secondary', labelBg: 'bg-secondary/10 text-secondary' };
       case 'arts': return { bg: 'bg-tertiary/15', text: 'text-tertiary', labelBg: 'bg-tertiary/10 text-tertiary' };
-      default: return { bg: 'bg-slate-100', text: 'text-slate-600', labelBg: 'bg-slate-100 text-slate-600' };
+      default: return { bg: 'bg-amber-50', text: 'text-amber-600', labelBg: 'bg-amber-100 text-amber-700' };
     }
   };
 
@@ -105,9 +164,6 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
       {/* Header */}
       <header className="bg-surface shadow-[0_4px_20px_rgba(0,91,191,0.04)] fixed top-0 w-full z-50 flex justify-between items-center px-5 h-16 max-w-2xl mx-auto left-0 right-0">
         <div className="flex items-center gap-3">
-          <button className="text-primary hover:bg-surface-container-low transition-colors rounded-full p-1.5 active:scale-95 duration-100">
-            <span className="material-symbols-outlined font-bold text-primary">arrow_back</span>
-          </button>
           <img 
             alt="Jewel Logo" 
             className="h-10 w-auto object-contain flex-shrink-0" 
@@ -140,62 +196,14 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
               className="w-full h-full object-cover opacity-60 grayscale-[15%] pointer-events-none" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvhDyXNPCRFFa_yFGYfDZzb6I9G3l73qki80CckRcvPn1IAhxdMQJhqhY_Wl64rStb3b94YD--UgLA37HbfEYDELexi2JqEyPw-Q2w28xe5htKkgsdjlhAwUxjzaTCBddWBpQsuHs8Sad57jDe5ncnCd4xMEkB7FgXWFTS_-mE1Zj42hrEl4_j0OsIabIDni84HtZkj_LuR8xQcmo-7j901QXRhYuZUOq8MwjhauyM99rK6XDTNPQ7v2vjnIH_bq6Z_ubk8QDcRjoN"
             />
-            {/* Pulsing interactive pin markers corresponding to actual activities */}
-            <div 
-              className="absolute top-[28%] left-[36%] cursor-pointer group"
-              onClick={() => {
-                setSelectedCategory('dining');
-                alert('已為您在地圖上定位「刷乃葉吃到飽聚餐」點！');
-              }}
-            >
-              <div className="bg-primary text-white p-3 rounded-full shadow-lg border-2 border-white animate-bounce group-hover:scale-110 transition-transform">
-                <Utensils className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-xs px-2 py-1 rounded shadow-md font-sans text-on-surface whitespace-nowrap font-bold block">
-                涮乃葉吃到飽
-              </div>
-            </div>
-
-            <div 
-              className="absolute top-[52%] left-[64%] cursor-pointer group"
-              onClick={() => {
-                setSelectedCategory('sports');
-                alert('已為您在地圖上定位「單車夜騎集合點」！');
-              }}
-            >
-              <div className="bg-secondary text-white p-3 rounded-full shadow-lg border-2 border-white animate-pulse group-hover:scale-110 transition-transform">
-                <Bike className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-xs px-2 py-1 rounded shadow-md font-sans text-on-surface whitespace-nowrap font-bold block">
-                單車夜騎去
-              </div>
-            </div>
-
-            <div 
-              className="absolute top-[68%] left-[28%] cursor-pointer group"
-              onClick={() => {
-                setSelectedCategory('sports');
-                alert('已為您在地圖上定位「室外羽球練習球場」！');
-              }}
-            >
-              <div className="bg-secondary text-white p-3 rounded-full shadow-lg border-2 border-white group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-white">sports_tennis</span>
-              </div>
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-xs px-2 py-1 rounded shadow-md font-sans text-on-surface whitespace-nowrap font-bold">
-                清晨羽球團
-              </div>
-            </div>
             
             {/* Floating zoom overlay helpers */}
             <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
               <button 
                 className="bg-white/80 p-2 rounded-xl shadow border border-outline-variant/30 text-primary active:scale-95 cursor-pointer font-bold"
-                onClick={() => alert('GPS 定位：校本部行政特區 - 精確鎖定')}
+                 onClick={() => alert('GPS 定位：校本部行政特區 - 精確鎖定')}
               >
                 <Navigation className="w-4 h-4 text-primary" />
-              </button>
-              <button className="bg-white/80 p-2 rounded-xl shadow border border-outline-variant/30 text-primary active:scale-95 cursor-pointer">
-                <SlidersHorizontal className="w-4 h-4 text-primary" />
               </button>
             </div>
           </div>
@@ -209,9 +217,6 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
               className="w-full h-full object-cover opacity-60 mix-blend-multiply" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwDwDDOvM4WuE59aVPcgMOt8LSv4ow7iNZc595f3-B9INlEGiv1oHhZiq_CmvS1BsHdM7Bhdj0ACdw10tm2y_vHGA-TW_YCAQPxcw08Sf9TSvx9QZCpuA6q1TZz_nY0h_pwP0iltypWBa3KWlv9lXsuUeRm_VeLp6nr94MNBZhqknERlm5AR3_qqVyzOws-yQatINYXEzcIkOjK3LsrgXk4fAlQYsmieAKgHL8nPCa9rpNwaqnIRcT_-A9FMAaLgp6BJO8621jxC9l"
             />
-            {/* Local ambient dots on the clean 3D graphic */}
-            <div className="absolute top-1/4 left-1/3 w-4 h-4 bg-primary rounded-full animate-ping"></div>
-            <div className="absolute bottom-1/3 right-1/4 w-4 h-4 bg-secondary rounded-full animate-ping"></div>
             
             {/* Visual Title Header */}
             <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-[#F7FAFD] to-transparent flex flex-col justify-end">
@@ -347,33 +352,13 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
             })}
           </div>
 
-          {/* MutAid indicator tip block on bottom */}
-          <div className="p-4 bg-white/75 backdrop-blur border border-outline-variant/30 rounded-2xl flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
-                <Bike className="w-6 h-6 text-secondary" />
-              </div>
-              <div className="space-y-0.5">
-                <h3 className="text-xs font-mono font-bold tracking-widest text-primary">COLLABORATIVE TASK</h3>
-                <p className="text-headline-sm font-sans text-sm font-bold">Riverfront Cycling Meetup</p>
-              </div>
-            </div>
-            <button 
-              className="bg-secondary text-on-secondary px-4 py-2.5 rounded-full text-xs font-bold font-sans shadow-md shadow-secondary/10 hover:brightness-110 active:scale-95 duration-100"
-              onClick={() => {
-                alert('即將帶您進入「CoolGuy」單車夜騎協作群組聊天空間！');
-                setScreen('chat');
-              }}
-            >
-              View Task
-            </button>
-          </div>
+
         </div>
 
         {/* Global Floating Action button bottom right */}
-        <div className="fixed bottom-24 right-5 z-40">
+        <div className="fixed bottom-24 left-0 right-0 max-w-2xl mx-auto z-40 flex justify-end px-5 pointer-events-none">
           <button 
-            className="bg-primary text-white flex items-center gap-2 px-5 py-3.5 rounded-2xl shadow-xl hover:shadow-2xl active:scale-95 duration-100 transition-all cursor-pointer"
+            className="pointer-events-auto bg-primary text-white flex items-center gap-2 px-5 py-3.5 rounded-2xl shadow-xl hover:shadow-2xl active:scale-95 duration-100 transition-all cursor-pointer"
             onClick={() => setScreen('post-task')}
           >
             <Plus className="w-5 h-5 text-white" />
@@ -386,7 +371,7 @@ export const TaskMapAndList: React.FC<TaskViewsProps> = ({
 };
 
 interface PostTaskFormProps {
-  currentUser: { id: string; name: string; avatar: string; points: number };
+  currentUser: { id: string; name: string; avatar: string; points: number; coins?: number };
   tasks: CollaborativeTask[];
   setTasks: React.Dispatch<React.SetStateAction<CollaborativeTask[]>>;
   setScreen: (screen: string) => void;
@@ -405,12 +390,31 @@ export const PostTaskForm: React.FC<PostTaskFormProps> = ({
   const [deadline, setDeadline] = useState('2026-06-08');
   const [location, setLocation] = useState('');
 
-  const availableTags = [
+  const [availableTags, setAvailableTags] = useState([
     { key: 'assistance', label: '學業協助' },
     { key: 'errand', label: '生活代辦' },
     { key: 'support', label: '技術支援' },
     { key: 'all', label: '跑腿外送' }
-  ];
+  ]);
+
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [newCustomLabel, setNewCustomLabel] = useState('');
+
+  const handleAddCustomCategory = () => {
+    const label = newCustomLabel.trim();
+    if (!label) return;
+
+    const exists = availableTags.find(tag => tag.label === label);
+    if (exists) {
+      setCategory(exists.key);
+    } else {
+      const key = `custom-${Date.now()}`;
+      setAvailableTags([...availableTags, { key, label }]);
+      setCategory(key);
+    }
+    setNewCustomLabel('');
+    setShowCustomInput(false);
+  };
 
   const handlePostSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -419,11 +423,14 @@ export const PostTaskForm: React.FC<PostTaskFormProps> = ({
       return;
     }
 
+    const matchedTag = availableTags.find(t => t.key === category);
+    const resolvedLabel = matchedTag ? matchedTag.label : category;
+
     const newTask: CollaborativeTask = {
       id: `task-custom-${Date.now()}`,
       title,
       category,
-      customStatusLabel: category.toUpperCase(),
+      customStatusLabel: resolvedLabel,
       description,
       reward: reward || 0,
       deadline,
@@ -481,7 +488,7 @@ export const PostTaskForm: React.FC<PostTaskFormProps> = ({
 
           <div className="space-y-2">
             <label className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#727785] ml-1">任務類別</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               {availableTags.map(tag => (
                 <button
                   key={tag.key}
@@ -492,6 +499,51 @@ export const PostTaskForm: React.FC<PostTaskFormProps> = ({
                   {tag.label}
                 </button>
               ))}
+
+              {!showCustomInput ? (
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-full border border-dashed border-primary text-xs font-bold transition-all text-primary bg-primary/5 hover:bg-primary/10 cursor-pointer flex items-center gap-1 active:scale-95 duration-100"
+                  onClick={() => setShowCustomInput(true)}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ 自訂類別</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-white border border-primary/30 rounded-full px-2.5 py-1 shadow-sm">
+                  <input
+                    type="text"
+                    value={newCustomLabel}
+                    onChange={(e) => setNewCustomLabel(e.target.value)}
+                    placeholder="輸入自訂名稱..."
+                    className="bg-transparent border-none p-0 outline-none text-xs focus:ring-0 max-w-[120px]"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomCategory();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomCategory}
+                    className="text-xs bg-primary text-white rounded-full px-2.5 py-1 hover:bg-primary-container active:scale-95 font-bold transition-all cursor-pointer"
+                  >
+                    新增
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomInput(false);
+                      setNewCustomLabel('');
+                    }}
+                    className="text-xs text-outline hover:text-on-surface px-1 cursor-pointer"
+                  >
+                    取消
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -511,7 +563,10 @@ export const PostTaskForm: React.FC<PostTaskFormProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#727785] ml-1">任務報酬</label>
+              <div className="flex justify-between items-center text-[10px] uppercase font-mono font-bold tracking-widest text-[#727785] px-1">
+                <span>任務報酬</span>
+                <span className="text-amber-600 font-sans normal-case">持有: {currentUser.coins !== undefined ? currentUser.coins : 1250} 揪幣</span>
+              </div>
               <div className="flex items-center bg-white rounded-xl px-3 py-3 shadow-sm border border-outline-variant/40">
                 <Coins className="w-5 h-5 text-yellow-500 mr-2" />
                 <input 

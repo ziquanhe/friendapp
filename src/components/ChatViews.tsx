@@ -89,6 +89,40 @@ export const ChatViews: React.FC<ChatViewsProps> = ({
     if (threadId === 'thread-badminton') {
       return '陳大文：收到！我們帶了三筒羽球，放心來玩就好。';
     }
+
+    // Check if is a dynamically joined task room
+    const taskId = threadId.replace('thread-', '');
+    
+    if (threadId.startsWith('thread-swipe-')) {
+      const swipeId = threadId.replace('thread-', '');
+      if (swipeId === 'swipe-lucas') {
+        return 'Lucas：哈哈！太棒了，那我們週末早上約吃早午餐或者一起去打球囉！期待跟你碰面！🏸☕';
+      }
+      if (swipeId === 'swipe-sarah') {
+        return 'Sarah：哇，真的嗎！我也很高興能認識你，有空可以一起去那家有 5 隻大橘貓的貓咪咖啡廳！☕🐾';
+      }
+      if (swipeId === 'swipe-emma') {
+        return 'Emma：好啊！這週五晚上剛好有音樂表演，到時我們約在大草皮那邊見好了！🎸';
+      }
+      if (swipeId === 'swipe-leo') {
+        return '阿智 Leo：讚啦！這週末剛好有新款遊戲聯名活動，或是我們晚上一起出來騎河濱吹個風！🚴🔥';
+      }
+      if (swipeId === 'swipe-bebe') {
+        return '貝貝 Bebe：好期待喔！那家早午餐的厚鬆餅超有名的，那我們週六早上見囉，到時候一起猛拍照！📸🥞';
+      }
+      if (swipeId === 'swipe-kev') {
+        return '宸愷 Kev：好的，我也挺期待的。這週五下午我會在總圖二期二樓自習，有空可以來討論或一起專注。📖';
+      }
+      if (swipeId === 'swipe-sunny') {
+        return '子晴 Sunny：太好了！那我就拿起我的古董相機，這週一起去尋找校園好拍的秘密光影美景囉！📸✨';
+      }
+    }
+
+    const matchedTask = tasks.find(t => t.id === taskId);
+    if (matchedTask) {
+      return `${matchedTask.createdByName}：太棒了，很高興你能加入本項「${matchedTask.title}」！大家可以在這裡多加討論活動細節喔！👋`;
+    }
+
     return '哈哈！聽起來不錯耶。那我們晚點線上繼續聊，揪團加油！';
   };
 

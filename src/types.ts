@@ -21,6 +21,7 @@ export interface UserProfile {
   ratings?: number; // e.g. 4.9
   helpCount?: number; // e.g. 124
   punctuality?: number; // e.g. 98%
+  coins?: number; // in 揪幣
 }
 
 export type TaskCategory = 'dining' | 'sports' | 'arts' | 'assistance' | 'support' | 'errand' | 'all';

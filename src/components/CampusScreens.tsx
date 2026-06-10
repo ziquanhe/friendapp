@@ -300,9 +300,10 @@ export const LoginScreen: React.FC<Pick<ScreenProps, 'setScreen'>> = ({ setScree
 // 4. REGISTRATION / PROFILE CREATION MODULE
 // ==========================================
 export const RegisterScreen: React.FC<ScreenProps> = ({ 
-  setScreen, currentUser, setCurrentUser 
+  setScreen, currentUser, setCurrentUser, currentScreen 
 }) => {
-  const [step, setStep] = useState(1); // 1 = Registration form, 2 = Profile Creation (MBTI, Interests, details)
+  const isEditing = currentScreen === 'edit-profile';
+  const [step, setStep] = useState(isEditing ? 2 : 1); // 1 = Registration form, 2 = Profile Creation (MBTI, Interests, details)
 
   // Step 1 states
   const [schoolEmail, setSchoolEmail] = useState(currentUser.schoolEmail || '');
@@ -346,10 +347,10 @@ export const RegisterScreen: React.FC<ScreenProps> = ({
       interests,
       age,
       height,
-      bio: bio || `我是一名熱心助人的 ${selectedMbti} 校友！`
+      bio: bio || `我名熱心助人的 ${selectedMbti} 校友！`
     }));
-    // Take directly to dashboard!
-    setScreen('dashboard');
+    // Take directly to dashboard or profile!
+    setScreen(isEditing ? 'profile' : 'dashboard');
   };
 
   const toggleInterest = (tag: string) => {
@@ -390,8 +391,13 @@ export const RegisterScreen: React.FC<ScreenProps> = ({
           <button 
             className="p-1 rounded-full hover:bg-surface-container-low transition-colors duration-100"
             onClick={() => {
-              if (step === 2) setStep(1);
-              else setScreen('auth-chooser');
+              if (isEditing) {
+                setScreen('profile');
+              } else if (step === 2) {
+                setStep(1);
+              } else {
+                setScreen('auth-chooser');
+              }
             }}
           >
             <ArrowLeft className="w-5 h-5 text-primary" />
@@ -402,7 +408,7 @@ export const RegisterScreen: React.FC<ScreenProps> = ({
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt1JKtEXwLdtrhfFRGxkvhnDPM9O3-nz6npiZc-PbE0VWN2z1Qe9YJn9UbZPHAlvzE1WaLOC9DZ9Eeuu6w8lZfFl4SvuxtIm_2YiMf_L6a165ys8twOBG7_CePBsJktG_o-zUtyfowRe1C13XzNDW4XoUxZQN8tFR6Dcgxije3k2_Bt1cOyXV5ITzTLMnslIrFtVcsjJ7E8qpj3O-qQgCHQpAdaJTYgaWmWkyjqkkSoyS1H3SGryz1iLTQQxP0iUjPuOxFenjpxZ6r" 
           />
           <h1 className="font-sans text-lg font-bold text-primary">
-            {step === 1 ? '帳號註冊' : '建立個人檔案'}
+            {isEditing ? '編輯個人檔' : (step === 1 ? '帳號註冊' : '建立個人檔案')}
           </h1>
         </div>
         <button className="p-1 rounded-full hover:bg-surface-container-low text-primary">
@@ -413,23 +419,25 @@ export const RegisterScreen: React.FC<ScreenProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 mt-16 pb-28 px-5 overflow-y-auto w-full max-w-2xl mx-auto">
         {/* Progress Indicators */}
-        <div className="py-6 flex items-center justify-center gap-2">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-sans text-xs ${step >= 1 ? 'bg-primary' : 'bg-surface-container-highest text-on-surface-variant'}`}>
-              1
+        {!isEditing && (
+          <div className="py-6 flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-sans text-xs ${step >= 1 ? 'bg-primary' : 'bg-surface-container-highest text-on-surface-variant'}`}>
+                1
+              </div>
+              <div className={`w-12 h-[2px] rounded-full ${step >= 2 ? 'bg-primary' : 'bg-outline-variant/30'}`}></div>
             </div>
-            <div className={`w-12 h-[2px] rounded-full ${step >= 2 ? 'bg-primary' : 'bg-outline-variant/30'}`}></div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-sans text-xs ${step >= 2 ? 'bg-primary text-white' : 'bg-primary-fixed text-primary'}`}>
-              2
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-sans text-xs ${step >= 2 ? 'bg-primary text-white' : 'bg-primary-fixed text-primary'}`}>
+                2
+              </div>
+              <div className="w-12 h-[2px] bg-outline-variant/30 rounded-full"></div>
             </div>
-            <div className="w-12 h-[2px] bg-outline-variant/30 rounded-full"></div>
+            <div className="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-sans text-xs">
+              3
+            </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-sans text-xs">
-            3
-          </div>
-        </div>
+        )}
 
         {/* STEP 1: Registration Form */}
         {step === 1 && (
@@ -657,7 +665,7 @@ export const RegisterScreen: React.FC<ScreenProps> = ({
                 type="submit" 
                 className="w-full bg-primary text-on-primary py-4 rounded-xl font-sans font-semibold text-md shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-primary-container"
               >
-                <span>儲存並完成</span>
+                <span>{isEditing ? '儲存修改' : '儲存並完成'}</span>
                 <CheckCircle className="w-5 h-5 text-white" />
               </button>
             </div>

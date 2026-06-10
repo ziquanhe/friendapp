@@ -23,7 +23,8 @@ export const CURRENT_USER_MOCK: UserProfile = {
   points: 850,
   ratings: 4.9,
   helpCount: 124,
-  punctuality: 98
+  punctuality: 98,
+  coins: 1250
 };
 
 // Initial state for nearby collaborative tasks
@@ -218,6 +219,30 @@ export const INITIAL_TASKS: CollaborativeTask[] = [
 // Tinder swipe potential matches
 export const POTENTIAL_SWIPES: UserProfile[] = [
   {
+    id: 'swipe-fan',
+    name: '范宇廷',
+    avatar: 'https://images.unsplash.com/photo-1624561172888-ac93c696e10c?auto=format&fit=crop&q=80&w=600',
+    isMe: false,
+    mbti: 'ESTP',
+    interests: ['汽車', '探店', '旅遊', '音樂', '電競'],
+    age: 21,
+    bio: '哈囉！我是范宇廷，大家都叫我「大員范將軍」。平常喜歡開車兜風、熱愛潮流與各式特色美食探店！希望能在這裡遇到志同道合或性格有趣的校園好夥伴，一起出門踩點玩耍！✌️',
+    ratings: 4.9,
+    helpCount: 42
+  },
+  {
+    id: 'swipe-tong',
+    name: '童錦程',
+    avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&q=80&w=600',
+    isMe: false,
+    mbti: 'ENTP',
+    interests: ['電競', '硬體改裝', '旅遊', '汽車', '探店'],
+    age: 23,
+    bio: '哈囉，我是童錦程！大家都叫我江南第一深情。平常愛開車兜風、探索城市夜生活！希望能遇到性格有趣的人，一起出門遊玩探店！',
+    ratings: 4.9,
+    helpCount: 99
+  },
+  {
     id: 'swipe-lucas',
     name: 'Lucas',
     avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvLVokpaPx63i8-5HFbYn9CEsoyf31Glbqjj1WHExuDFdm1cISq5NcF_FusylMRoWVX5jj-8CiStDMwRaDrYIbjDAwrKyyr4pNJrQauOG0l4IHCpbGG05JYsNuArXxK1k9rg-7p33lreSwVUpkTajOuviPjXhevUojSPTlgEHdYTIMWTfr0TUOpJueoHlNoE8CGF98JDrVg72_BysrJyJNgqZvlOOyQ3Wm5eSX2gr4fRNYXSaaoQioTZ2GLGJNYWdvtp-yQXXkTm8Z',
@@ -252,6 +277,54 @@ export const POTENTIAL_SWIPES: UserProfile[] = [
     bio: '我是 Emma！企管系大三，熱愛獨立樂團跟社交活動。也是重度桌遊愛好者，隨時歡迎揪團！',
     ratings: 4.7,
     helpCount: 56
+  },
+  {
+    id: 'swipe-leo',
+    name: '阿智 Leo',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBeHXrl4P_gsq3opHcCrgPAQuGAfMEoDjv2pUOn-9UX-oyZcgVywByfwg6EXjNBm2Qt6FJ5vrvCHXCRX7liSxPd_HUL1tHQyUDunwLWUX3NKioW1tQPjvdvCSDB3dXj7x4mT54Hf9ZtMLoj1klnB_1cBPwhZrF2aBFL8ly3XH1YSEVlmI6QMwwQUTuNzJ7M7-RhjYb9Co2o3P-bZz9bJr9RrwxE9ABYMpFQGcmLtncRb0WJlyb4zx4HfSZXCKInV4jC8-DyAQNXxNdh',
+    isMe: false,
+    mbti: 'ISTP',
+    interests: ['電競', '運動', '音樂'],
+    age: 20,
+    bio: '我是化學系的阿智！平時最喜歡在線上跟人組隊打戰術電競，也常在夜晚河濱騎行，追求風一般的速度感。來配對找尋最靠譜的校園戰友吧！',
+    ratings: 4.9,
+    helpCount: 61
+  },
+  {
+    id: 'swipe-bebe',
+    name: '貝貝 Bebe',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBstVlYH-yfllltP3jd38DxlJpiZL8HFDVj1w-5NKIZXX0X-fcAyMasrYzUtCO04Vz0Su_Ym0GYQo_7B8f6hEyngUV_qHOFi-8XRbL6gFK63CPzKhRRS3xbkyG5-Hdki_zNoQj89RlfX0usVnPrEFFyh20xi3zJrl8mOPTyvwHZjH7FE-KR-DB8Vphk0Gwpp_RfNNEpUpb3-teMKxrQmyJSpx7Wpb82MiMwqaoiKdpLGw4Z-DD-3l79f0VRwUbcec32NvpxOPEICAy_',
+    isMe: false,
+    mbti: 'ESFP',
+    interests: ['美食', '音樂', '旅遊'],
+    age: 19,
+    bio: '嗨！我是貝貝，管院大一。超級外向！沒事最喜歡在校園附近到處探店踩點、跳街舞跟揪團唱歌。快來找我一起挖掘超好吃的手作甜點店與早午餐！',
+    ratings: 4.8,
+    helpCount: 29
+  },
+  {
+    id: 'swipe-kev',
+    name: '宸愷 Kev',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSLPM9bzfmQRsRt5UpJ5Pd3R4F6ZyCr3KqrED1UhscNhE1_a7LqHYVx6KS7-RL5RivlmTVJuX7TZoxkHxVmKNmSRyDXVOuOX-RTircGRmZWaJHPOO9M8oPtSqLM5Ted3UMZAfTXLQDBVz-WlHwlWZoL9n3cviDeDs-U7Jw--8Zsx-9egRjN9nSDni4J9D5NsG6vue0ZGx52Eput4UeolGdkerQ81OSfGV14su8mnIs1DN6pm7GrwS1rtdFT6FIPVCoERpyciImBoAa',
+    isMe: false,
+    mbti: 'INTJ',
+    interests: ['Coding', '音樂', '電競'],
+    age: 22,
+    bio: '電機大四，專注務實派。喜歡寫 code 分析算法結構、偶爾彈彈重低音吉他、逛逛科技新創展。期望能在社群裡找到能深聊，或是一起在圖書館默默自習自律的前往目標的夥伴。',
+    ratings: 5.0,
+    helpCount: 88
+  },
+  {
+    id: 'swipe-sunny',
+    name: '子晴 Sunny',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAclEWSdO2r5QrNV4rszqGQCCRGhre6vodCEQxRPomJUH3bDRYSb3dLUscLtnLFkERWtZIPz1WRqG8VniTOYA6pORKKau7alpGU4VacWEt1Z35_1fYqpMIU6ORgqEMNoVoC0SfHISLGFP7sOkKjF3vHKJqNOwv4zvTTBpQNCOvyEWxllcLGo-mWeXhAMUpqR2yCsAXMjuvftX4hJpKlwgbWMCZ_IU9IncEkEMkU4UU8w1OJZX3oPWJIf3PDHmfflEA-WtOXH6o_qyCt',
+    isMe: false,
+    mbti: 'ENFP',
+    interests: ['攝影', '旅遊', '美食'],
+    age: 21,
+    bio: 'Hey! 我是子晴，中文大三！熱愛拿著骨董底片相機去捕捉校園各個角落的自然光線。很愛去宜蘭或台南小旅行、看現代藝文展！希望能找到可以帶相機隨意在街頭漫步的文青朋友～',
+    ratings: 4.9,
+    helpCount: 42
   }
 ];
 
